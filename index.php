@@ -44,7 +44,7 @@
             <input type="file" name="fileToUpload" id="fileToUpload"/>
         </div>
 
-        <input type="submit" name="uploadBtn" value="Upload file" />
+        <input class="button-primary" type="submit" name="uploadBtn" value="Upload file" />
     </form>
 
 <?php
@@ -59,7 +59,7 @@
         <br>
         <form method="POST" action="<?php echo get_site_url() ?>/wp-admin/admin-post.php">
             <input type="hidden" name="action" value="process_events">
-            <input type="submit" name="processBtn" value="Import events" />
+            <input class="button-primary" type="submit" name="processBtn" value="Import events" />
         </form>
         <br>
         <?php
@@ -97,7 +97,7 @@
         <br>
         <form method="POST" action="<?php echo get_site_url() ?>/wp-admin/admin-post.php">
             <input type="hidden" name="action" value="process_events">
-            <input type="submit" name="processBtn" value="Import events" />
+            <input class="button-primary" type="submit" name="processBtn" value="Import events" />
         </form>
         <br>
 	    <?php

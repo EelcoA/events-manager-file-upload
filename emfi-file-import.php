@@ -20,8 +20,8 @@ add_action('admin_menu', 'emfi_Add_My_Admin_Link');
 function emfi_Add_My_Admin_Link()
 {
     add_menu_page(
-        'EM File Import', // Title of the page
-        'EM file import', // Text to show on the menu link
+        'Import Events', // Title of the page
+        'Import Events', // Text to show on the menu link
         'manage_options', // Capability requirement to see the link
         'em-file-import/index.php' // The 'slug' - file to display when clicking the link
     );

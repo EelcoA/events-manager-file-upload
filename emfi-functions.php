@@ -47,27 +47,29 @@ function emfi_create_EM_Event_from_row(array $event_row ){
 	/*
 	 * start date and time
 	 */
-	$event_start_date =  $event_row[ emfi_field_nr_event_start_date ];
-	$event_start_time =  $event_row[ emfi_field_nr_event_start_time ];
-	if (empty($event_start_date) or empty($event_start_time)) {
-		throw new Exception("Start date and/or time have no value.");
-	}
+	$event_start_date        = emfi_get_valid_date_string($event_row[ emfi_field_nr_event_start_date ], "start_date");
+	$event_start_time        = emfi_get_valid_time_string($event_row[ emfi_field_nr_event_start_time ], "start_time");
+
 	$event->event_start_date = $event_start_date;
 	$event->event_start_time = $event_start_time;
 	$event->event_start      = $event_start_date . ' ' . $event_start_time;
 
 	/*
-	 * end data and time, when not given, same as start date and time
+	 * end data and time
 	 */
 	$event_end_date = $event_row[ emfi_field_nr_event_end_date ];
 	$event_end_time = $event_row[ emfi_field_nr_event_end_time ];
-	if (empty($event_end_date) or empty($event_end_time)) {
-		$event->event_end_date = $event_start_date;
-		$event->event_end_time   = $event_start_time;
-	} else {
-		$event->event_end_date = $event_end_date;
-		$event->event_end_time = $event_end_time;
-	}
+
+	// if end date is empty, the start date is taken
+	if (empty($event_end_date) )
+		$event_end_date = $event_start_date;
+	// if end time is empty, the start time is taken
+	if (empty($event_end_time))
+		$event_end_time   = $event_start_time;
+
+	$event->event_end_date = emfi_get_valid_date_string($event_end_date, "end_date");
+	$event->event_end_time = emfi_get_valid_time_string($event_end_time, "end_time");
+
 	/*
 	 * Location
 	 */
@@ -85,11 +87,22 @@ function emfi_create_EM_Event_from_row(array $event_row ){
 
 }
 
+/**
+ * Check on being not empty.
+ * When empty, an Exception is thrown with error message.
+ * When not empty, the value is returned.
+ * @param string $value
+ * @param string $name
+ *
+ * @return string $value when not empty
+ * @throws Exception
+ */
 function emfi_not_empty(string $value, string $name): string {
 	if (empty($value))
 		throw new Exception("{$name} has no value" );
 	return $value;
 }
+
 /**
  * Check if a event already exists with event_status = 1 and the same:
  * - location
@@ -132,10 +145,10 @@ function emfi_get_category_id(string $category_slug): int
 	if (empty($category_slug))
 		throw new Exception("Category-slug is empty.");
 	$term              = get_term_by( 'slug', $category_slug, 'event-categories' );
-	$term_id           = $term->term_id;
-	if (!$term_id)
-		throw new Exception("There is no category with category-slug '" . $category_slug . "'.");
-	return $term_id;
+	if (empty($term))
+		throw new Exception("Unknown category-slug '" . $category_slug . "'.");
+
+	return $term->term_id;
 }
 
 /**
@@ -153,7 +166,59 @@ function emfi_get_location_id(string $location_slug): int
 		array( $location_slug));
 	$location_id  = $wpdb->get_var($query_string);
 	if (is_null($location_id))
-		throw new Exception("There is no location with location-slug '" . $location_slug . "'.");
+		throw new Exception("Unknown location-slug '" . $location_slug . "'.");
 	return $location_id;
 }
 
+/**
+ * Checks if $date contains a valid date string YYYY-MM-DD.
+ * When not valid, an exception is thrown.
+ * When valid, $date is returned.
+ * @param string $date
+ * @param string $name
+ *
+ * @return string
+ * @throws Exception
+ */
+function emfi_get_valid_date_string(string $date, string $name): string
+{
+	// first check on non empty, for a nice error message
+	emfi_not_empty($date, $name);
+
+	// then check the date
+	$d = DateTime::createFromFormat("Y-m-d", $date);
+	// The Y ( 4 digits year ) returns TRUE for any integer with any number of digits so changing the comparison from == to === fixes the issue.
+	if ( $d && $d->format("Y-m-d") === $date)
+		return $date;
+	else
+		throw new Exception($name . " is not valid: " . $date);
+
+}
+
+/**
+ * Checks if $time contains a valid timestring HH:mm:ss.
+ * When not valid, an exception is thrown.
+ * When valid, $time is returned.
+
+ * @param string $time
+ * @param string $name
+ *
+ * @return string
+ * @throws Exception
+ */
+function emfi_get_valid_time_string(string $time, string $name): string
+{
+	// first check on non empty, for a nice error message
+	emfi_not_empty($time, $name);
+	if (strlen($time) != 8)
+		throw new Exception($name . " is not valid time (hh:mm:ss): " . $time);
+
+	// then check the date
+	$t = strtotime($time);
+
+	if ( $t )
+		return $time;
+	else
+		throw new Exception($name . " is not valid: " . $time);
+
+}
