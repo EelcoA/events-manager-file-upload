@@ -39,4 +39,26 @@ Field             | Format      | Required     |
 1) duplicates - when an event already exists with the same location, event_name, start date and start time the event is 
 not created and an error is shown in the result page.
 
+##### Screenprints
+
+1) Browse for csv file to upload
+![alt text](doc/img/event-manager-file-upload-img01_browse_for_csv_file.jpg)
+
+2) Show preview uploaded events from file
+![alt text](doc/img/event-manager-file-upload-img02_preview_uploaded_events_file.jpg)
+
+3) Show result processing the events with some errors and some successfull creations.
+![alt text](doc/img/event-manager-file-upload-img03_result_processing_with_some_errors.jpg)
+
+##### Example file
+There is a file with example data in the doc directory
+
+    
+#### Author
+- Eelco Aartsen
+- eelco@aesset.nl
+- AESSET IT - The Netherlands
+- www.aesset.nl
+
+
 
