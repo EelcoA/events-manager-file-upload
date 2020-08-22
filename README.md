@@ -51,7 +51,9 @@ not created and an error is shown in the result page.
 ![alt text](doc/img/event-manager-file-upload-img03_result_processing_with_some_errors.jpg)
 
 ##### Example file
-There is a file with example data in the doc directory
+There is a file with example data in the doc directory.
+
+That file is created by a webpage scraper, written in python, using Scrapy. If you want to see how that works, see my other github project: https://github.com/EelcoA/fabriekscraper
 
     
 #### Author
