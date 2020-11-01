@@ -1,7 +1,3 @@
-<?php
-    if (!session_id())
-        session_start();
-?>
     <!DOCTYPE html>
     <html>
 
@@ -15,37 +11,26 @@
     </style>
     <body>
       <h1>Events Manager File Import</h1>
-    <?php
 
-    if(isset($_SESSION['errors']))
-        $errors = $_SESSION['errors'];
+    <div id="emfi-error" class="notice notice-error inline" style="display:none;"/>
+    </div>
 
-    if(!empty($errors)) {
-        foreach($errors as $errArray) { ?>
-            <div class="notice <?php echo (isset($errArray['error']))? "notice-error":"notice-success"; ?> inline"/>
-                <p>
-                    <?php echo $errArray['details']; ?>
-                </p>
-            </div>
-            <?php
-            $errArray   =   array();
-        }
-        $_SESSION['errors'] = null;
-    }
+    <div id="emfi-success" class="notice notice-success inline" style="display:none;"/>
+    </div>
 
-    ?>
-      <div class=""></div>
-    <form method="POST" action="<?php echo get_site_url() ?>/wp-admin/admin-post.php"
-                        enctype="multipart/form-data">
-        <input type="hidden" name="doload" value="doload">
-        <input type="hidden" name="action" value="upload_file">
-        <div>
-            <span>Choose a file to upload:</span>
-            <input type="file" name="fileToUpload" id="fileToUpload"/>
+    <div id="emfi-message"></div>
+
+    <form class="fileUpload" enctype="multipart/form-data">
+        <div id="form-group" class="form-group">
+            <label><?php _e('Choose File:'); ?></label>
+            <input type="file" id="file" name="file" accept=".csv"/>
+            <input class="button-primary" id="emfi-upload-file-button" value="Upload event file" />
         </div>
-
-        <input class="button-primary" type="submit" name="uploadBtn" value="Upload file" />
     </form>
+
+    <br>
+
+    <div id="events_table"></div>
 
 <?php
 

@@ -16,6 +16,7 @@ global $wpdb;
 // Hook the 'admin_menu' action hook, run the function named
 add_action('admin_menu', 'emfi_Add_My_Admin_Link');
 
+
 // Add a new top level menu link to the ACP
 function emfi_Add_My_Admin_Link()
 {
@@ -27,27 +28,70 @@ function emfi_Add_My_Admin_Link()
     );
 }
 
-add_action('init', 'emfi_start_session', 1);
-add_action('wp_logout', 'emfi_end_session' );
-add_action('wp_login', 'emfi_end_session' );
 
-function emfi_start_session() {
-    if(!session_id()) {
-        session_start();
-    }
+// Make the javascript file available for admin pages
+add_action( 'admin_enqueue_scripts', 'emfi_scripts' );
+function emfi_scripts() {
+	wp_register_script('ajaxHandle', 
+						plugin_dir_url( __FILE__ ) . '/js/emfi-file-import.js',
+						array('jquery'), 
+						false, 
+						true);	
+	wp_localize_script( 
+		'ajaxHandle',
+		'ajax_object',
+		array( 'ajaxurl' => admin_url('admin-ajax.php') ) 
+	);
+	wp_enqueue_script('ajaxHandle');
 }
 
-function emfi_end_session() {
-    session_destroy ();
+add_action('wp_ajax_emfi_file_upload', 'emfi_file_upload_callback');
+add_action('wp_ajax_nopriv_emfi_file_upload','emfi_file_upload_callback');
+
+function emfi_file_upload_callback() {
+
+	$result = [];
+
+	if(!isset($_FILES)){
+		$result['status']  = "FAILURE";
+		$result['message'] = "No file choosen";
+		echo json_encode($result);
+		wp_die();
+	}
+
+	if(empty($_FILES['file'])) {
+		$result['status']  = "FAILURE";
+		$result['message'] = "No file choosen";
+		echo json_encode($result);
+		wp_die();
+	}
+
+	$uploadResult = uploadFile($_FILES['file']);
+	if($uploadResult['status']!="SUCCESS"){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Error while uploading file: ' . $uploadResult['message'];
+		echo json_encode($result);
+		wp_die();
+	}
+
+	$events = emfi_process_file($uploadResult['file']);
+	$data = json_encode($events);
+	$result['status']  = "SUCCESS";
+	$result['message'] = 'File has been successfully uploaded';
+	$result['data']    = $data;
+	// $sample_array = array();
+	// $sample_array[] = ["Hello1", "to", "you"];
+	// $sample_array[] = ["Hello2", "to", "you"];
+	echo json_encode($result);
+
+	wp_die();
 }
+
 
 add_action( 'admin_post_upload_file', 'emfi_admin_upload_file' );
-add_action( 'admin_post_process_events', 'emfi_admin_process_events' );
 
 function emfi_admin_upload_file()
 {
-    if (!session_id())
-        session_start();
 
 	$error = array();
 	$message = array();
@@ -103,8 +147,6 @@ function emfi_admin_upload_file()
 	        // if everything is ok, try to upload file
 	        if (move_uploaded_file($_FILES[$iName]["tmp_name"], $target_file)) {
 	            try{
-	                $events = emfi_process_file($target_file);
-	                $error[] = array("details" => "The file " . basename($filename) . " has been uploaded.");
 	            } catch (Exception $e){
 	                $error[] = array("error" => true, "details" => "Something went wrong while processing file " .
 	                    basename($_FILES[$iName]["name"]) . ": ". $e->getMessage());
@@ -126,25 +168,26 @@ function emfi_admin_upload_file()
 /**
  * Process the file into rows with events to display on the screen
  * @param $filename
- *
  * @return array
+ * 
+ * TODO: make it monkey-proof for invalid file and file types
  */
 function emfi_process_file($filename){
 
-	// TODO: make it monkey-proof for invalid file and file types
-
-    // The nested array to hold all the arrays
-    $events = [];
+	$events = array();
+	$i = 0;
 
     // Open the file for reading
     if (($h = fopen("{$filename}", "r")) !== FALSE)
     {
         // Each line in the file is converted into an individual array that we call $data
-        // The items of the array are comma separated
+		// The items of the array are comma separated
         while (($data = fgetcsv($h, 3000, ",")) !== FALSE)
         {
-            // Each individual array is being pushed into the nested array
-            $events[] = $data;
+			array_unshift($data, $i);
+			// Each individual array is being pushed into the nested array
+			$events[] = $data;
+			$i+=1;
         }
 
         // Close the file
@@ -153,10 +196,14 @@ function emfi_process_file($filename){
 
     return $events;
 }
+
+
 /*
  * Process the array with events, creating POST and EVENTS
  * This is called when the user presses the 'process_events' button on the upload page
  */
+add_action( 'admin_post_process_events', 'emfi_admin_process_events' );
+
 function emfi_admin_process_events(){
 	$messages = [];
 	$results = [];
@@ -208,4 +255,66 @@ function emfi_admin_process_events(){
     $_SESSION["results"] = $results;
     wp_redirect( $_SERVER['HTTP_REFERER'] );
     exit();
+}
+
+// --------------- [ Upload Function ] -----------------------
+function uploadFile($file) {
+
+	$data                       =           array();
+
+	$source_path                =           $file['tmp_name'];
+
+	$file_name                  =           $file['name'];
+	
+	$file_extension             =           pathinfo($file_name, PATHINFO_EXTENSION);
+
+	$target_file_name           =           $file_name;
+
+    $plugin_dir                 =           plugin_dir_path( __FILE__ );
+    $target_dir                 =           $plugin_dir . "uploaded/";
+	$target_filepath            =           $target_dir.$target_file_name;
+
+	$file_type                  =           $file['type'];
+
+	// ------------ [ File Validation ] --------------------------           
+
+	if($file_type != "text/csv" && $file_type != "text/txt" ){
+		$data['status']         =           "FAILED";
+		$data['message']        =           "Invalid file type: ".$file_type." (File type only txt and csv allowed)";
+		return $data;
+	}
+
+	if($file['size']  > 2048000) {
+		$data['status']         =           "FAILED";
+		$data['message']        =           "File size is larger than 2 MB";
+		return $data;
+	}
+
+    // ------------- [ Check and/or create output dir ] ---------------
+
+	if (!is_dir($target_dir))
+        mkdir($target_dir, 0755, true);
+
+	// ------------- [ Empty output dir ] ------------------------------
+	
+	$existing_files = glob($target_dir . "*");
+	foreach($existing_files as $existing_file){ 
+		if(is_file($existing_file))
+			unlink($existing_file); // delete file
+	}
+
+	// ------------------ [ File upload ] ---------------
+
+	if(move_uploaded_file($source_path, $target_filepath)) {
+
+		$data['status']     =           "SUCCESS";
+		$data['message']    =           "File uploaded successfully to: ".$target_filepath ;
+		$data['file']       =           $target_filepath;
+	} else {
+		$data['status']     =           "FAILED";
+		$data['message']    =           "File uploaded failed.";
+		$data['file']       =           $target_filepath;
+	}
+	
+	return $data;
 }
