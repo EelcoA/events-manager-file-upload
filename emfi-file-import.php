@@ -45,6 +45,11 @@ function emfi_scripts() {
 	wp_enqueue_script('ajaxHandle');
 }
 
+
+/*
+*   upload the files, read content and return as json data
+*/
+
 add_action('wp_ajax_emfi_file_upload', 'emfi_file_upload_callback');
 add_action('wp_ajax_nopriv_emfi_file_upload','emfi_file_upload_callback');
 
@@ -66,7 +71,8 @@ function emfi_file_upload_callback() {
 		wp_die();
 	}
 
-	$uploadResult = uploadFile($_FILES['file']);
+	$uploadResult = emfi_file_upload($_FILES['file']);
+
 	if($uploadResult['status']!="SUCCESS"){
 		$result['status']  = "FAILURE";
 		$result['message'] = 'Error while uploading file: ' . $uploadResult['message'];
@@ -74,96 +80,17 @@ function emfi_file_upload_callback() {
 		wp_die();
 	}
 
-	$events = emfi_process_file($uploadResult['file']);
-	$data = json_encode($events);
+	$emfi_events = emfi_get_events_from_file($uploadResult['file']);
+
+	$data = json_encode($emfi_events);
 	$result['status']  = "SUCCESS";
 	$result['message'] = 'File has been successfully uploaded';
 	$result['data']    = $data;
-	// $sample_array = array();
-	// $sample_array[] = ["Hello1", "to", "you"];
-	// $sample_array[] = ["Hello2", "to", "you"];
 	echo json_encode($result);
 
 	wp_die();
 }
 
-
-add_action( 'admin_post_upload_file', 'emfi_admin_upload_file' );
-
-function emfi_admin_upload_file()
-{
-
-	$error = array();
-	$message = array();
-
-    // Handle request then generate response using echo or leaving PHP and using HTML
-
-    $plugin_dir = plugin_dir_path( __FILE__ );
-    $settings   = false;
-    $target_dir = (!empty($settings['target_dir'])) ? $settings['target_dir'] : $plugin_dir . "uploaded/";
-    $iName      = (!empty($settings['input'])) ? $settings['input'] : "fileToUpload";
-    $filter     = (!empty($settings['filter']) && is_array($settings['filter'])) ? $settings['filter'] : array("txt", "csv");
-
-    // Create output directory when it doesn't exist yet
-    if (!is_dir($target_dir))
-        mkdir($target_dir, 0755, true);
-
-    // Empty output directory preventing duplicates and getting rid of garbage is always a good thing
-	$files = glob($target_dir . "*"); // get all file names
-	foreach($files as $file){ // iterate files
-		if(is_file($file))
-			unlink($file); // delete file
-	}
-
-    $filename = trim(basename($_FILES[$iName]["name"]));
-	if (empty($filename))
-		$error[] = array("error" => true, "details" => "No file selected");
-	else {
-
-	    $target_file = str_replace("//", "/", $target_dir . $filename);
-	    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
-
-	    // Check if file already exists (should not be the case, but in case deletion had failed...
-	    if (file_exists($target_file)) {
-		    if (unlink($target_file)) // delete file, try it again
-			    $message[] = array("details" => "Previous file with that name has been removed: " . $target_file);
-		    else
-			    $error[] = array("error" => true, "details" => "Deleting previous file with that name has failed");
-	    }
-
-	    // Check file size
-	    if ($_FILES["fileToUpload"]["size"] > 500000) {
-	        $error[] = array("error" => true, "details" => "Sorry, your file is too large.");
-	    }
-
-	    // Allow certain file formats
-	    if (!in_array($imageFileType, $filter)) {
-	        $error[] = array("error" => true, "details" => "Sorry, only csv & txt files are allowed.<br>");
-	    }
-
-	    $events = [];
-	    if (empty($error)) {
-	        // if everything is ok, try to upload file
-	        if (move_uploaded_file($_FILES[$iName]["tmp_name"], $target_file)) {
-	            try{
-	            } catch (Exception $e){
-	                $error[] = array("error" => true, "details" => "Something went wrong while processing file " .
-	                    basename($_FILES[$iName]["name"]) . ": ". $e->getMessage());
-	            }
-
-	        } else {
-	            $error[] = array("error" => true, "details" => "The file " .
-	                                                           basename($_FILES[$iName]["name"]) .
-	                                                           "failed to upload." );
-	        }
-	    }
-		$_SESSION["events"] = $events;
-	}
-    $_SESSION["errors"] = array_merge($message, $error);
-    wp_redirect( $_SERVER['HTTP_REFERER'] );
-    exit();
-}
 
 /**
  * Process the file into rows with events to display on the screen
@@ -172,26 +99,27 @@ function emfi_admin_upload_file()
  * 
  * TODO: make it monkey-proof for invalid file and file types
  */
-function emfi_process_file($filename){
+function emfi_get_events_from_file($filename){
 
 	$events = array();
-	$i = 0;
+	$rown_number = 0;
 
     // Open the file for reading
-    if (($h = fopen("{$filename}", "r")) !== FALSE)
+    if (($event_file = fopen("{$filename}", "r")) !== FALSE)
     {
         // Each line in the file is converted into an individual array that we call $data
 		// The items of the array are comma separated
-        while (($data = fgetcsv($h, 3000, ",")) !== FALSE)
+        while (($rowdata_array = fgetcsv($event_file, 3000, ",")) !== FALSE)
         {
-			array_unshift($data, $i);
+			// add rownumber to the row data
+			array_unshift($rowdata_array, $rown_number);
+
 			// Each individual array is being pushed into the nested array
-			$events[] = $data;
-			$i+=1;
+			$events[] = $rowdata_array;
+			$rown_number+=1;
         }
 
-        // Close the file
-        fclose($h);
+        fclose($event_file);
     }
 
     return $events;
@@ -199,33 +127,193 @@ function emfi_process_file($filename){
 
 
 /*
- * Process the array with events, creating POST and EVENTS
- * This is called when the user presses the 'process_events' button on the upload page
- */
-add_action( 'admin_post_process_events', 'emfi_admin_process_events' );
+*   Callback function for importing events
+*/
+add_action('wp_ajax_emfi_import_events', 'emfi_import_events_callback');
+add_action('wp_ajax_nopriv_emfi_import_events','emfi_file_upload_callback');
 
-function emfi_admin_process_events(){
-	$messages = [];
-	$results = [];
-    $event_rows = $_SESSION["events"];
-    $_SESSION["events"] = null;
+function emfi_import_events_callback(){
+
+	$result = [];
+
+	if(!isset($_POST)){
+		$result['status']  = "FAILURE";
+		$result['message'] = "Programming error, no $_POST";
+		echo json_encode($result);
+		wp_die();
+	}
+
+	if(empty($_POST['events'])) {
+		$result['status']  = "FAILURE";
+		$result['message'] = "Programming error, no 'events' in $_POST";
+		echo json_encode($result);
+		wp_die();
+	}
+
+	$events_to_import_json = $_POST['events'];
+	$datatype = gettype($events_to_import_json);
+	if(!datatype=="string"){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: events_to_import_json is not a string but a '.$datatype;
+		echo json_encode($result);
+		wp_die();
+	}
+	// $expected = '[[0,\"datum\",\"tijd\",\"titel\"],[1,\"2020-08-22\",\"20:30\",\"Summerland\"]]';
+	// if(strcmp($expected, $events_to_import_json)){
+	// 	$result['status']  = "FAILURE";
+	// 	$result['message'] = 'Programming error: events_to_import_json does not contain expected: '.$events_to_import_json;
+	// 	echo json_encode($result);
+	// 	wp_die();
+	// }
+
+	$events_to_import_json_2 = stripslashes($events_to_import_json);
+	$events_to_import_json_3 = addslashes($events_to_import_json_2);
+	// $events_to_import_json_3 = stripslashes($events_to_import_json_2);
+	// $events_to_import_json_2 = str_replace('\"','"',$events_to_import_json);
+	// $events_to_import_json_3 = str_replace('\\','',$events_to_import_json2);
+
+	$events_to_import = json_decode($events_to_import_json_2);
+
+	// $result['status']  = "FAILURE";
+	// $result['message'] = 'events_to_import type: ' . gettype($events_to_import) . ' # ' 
+	//                       . ' size of 0 ' . sizeof($events_to_import[0])
+	//                       . ' size of 1 ' . sizeof($events_to_import[1])
+	// 					. " rec 0: " . $events_to_import[0][0] . ", "
+	// 					. $events_to_import[0][1] . ", "
+	// 					. $events_to_import[0][2] . ", "
+	// 					. $events_to_import[0][3] . ", "
+	// 					. " rec 1: " . $events_to_import[1][0] . ", "
+	// 					. $events_to_import[1][1] . ", "
+	// 					. $events_to_import[1][2] . ", "
+	// 					. $events_to_import[1][3] . ", "
+	// 					;
+	// echo json_encode($result);
+	// wp_die();
+
+	$datatype = gettype($events_to_import);
+	if(!$datatype=='array'){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: events_to_import is not an array but a '.$datatype;
+		echo json_encode($result);
+		wp_die();
+	}
+	if(sizeof($events_to_import)==0){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: events_to_import is an empty array, size='.sizeof($events_to_import);
+		echo json_encode($result);
+		wp_die();
+	}
+	if(!gettype($events_to_import[0])=='array'){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: events_to_import[0] is not an arrays';
+		echo json_encode($result);
+		wp_die();
+	}
+
+	$import_result = emfi_import_events($events_to_import);
+
+	if($import_result['status']!="SUCCESS"){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Error while importing events: ' . $import_result['message'];
+		echo json_encode($result);
+		wp_die();
+	}
+
+	$imported_events = $import_result['result_details'];
+
+	if(!gettype($imported_events)=='array'){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: imported_events is not an array';
+		echo json_encode($result);
+		wp_die();
+	}
+	if(sizeof($imported_events)==0){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: imported_events is an empty array';
+		echo json_encode($result);
+		wp_die();
+	}
+	if(!gettype($imported_events[0])=='array'){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: imported_events[0] is not an arrays';
+		echo json_encode($result);
+		wp_die();
+	}
+	$data = json_encode($imported_events);
+	$result['status']  = "SUCCESS";
+	$result['message'] = 'Events have been successfully imported into the database';
+	$result['data']    = $data;
+	echo json_encode($result);
+
+	wp_die();
+
+}
+
+/*
+ *  import events into the database
+ */
+function emfi_import_events($event_rows){
+	$result = array();
+
+
+	if(!gettype($event_rows)=='array'){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: event_rows is not an array';
+		return $result;
+	}
+	if(sizeof($event_rows)==0){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: event_rows is an empty array';
+		return $result;
+	}
+	if(!gettype($event_rows[0])=='array'){
+		$result['status']  = "FAILURE";
+		$result['message'] = 'Programming error: event_rows[0] is not an arrays';
+		return $result;
+	}
+	$row0 = $event_rows[0];
+	if(sizeof($row0)!=10){
+		if(sizeof($row0)!=0){
+			$num_columns=sizeof($row0)-1;
+		} else {
+			$num_columns=0;
+		}
+		$result['status']  = "FAILURE";
+		$result['message'] = 'File should contain 9 columns but it has ' . $num_columns . ' columns';
+		return $result;
+	}
+
+	// $result['status']  = "FAILURE";
+	// $result['message'] = 'In emfi_import_events, after checks, size row0: ' . sizeof($row0);
+	// return $result;
+
+	$result_details = [];
 
     $row_nr = 0;
     foreach ($event_rows as $event_row) {
 
     	/*
-    	 * Add the smaller fields (meaning all except post_excerpt and post_content) to the result row to display later
-    	 * including the result (message about event creation or error).
+    	 * Add the smaller fields (meaning all except post_excerpt and post_content) 
+		 * to the result row to display later including the result 
+		 * (= message about event creation or error).
     	 */
 	    $display_row_nr = $row_nr + 1;
-    	$result_row = array($display_row_nr, $event_row[0], $event_row[1], $event_row[2],
-		    $event_row[3], $event_row[4], $event_row[7], $event_row[8]);
-    	if ($row_nr == 0)
-    		$result_row[] = "Result";
+		$result_row = array($event_row[0], 
+							$event_row[1], 
+							$event_row[2], 
+							$event_row[3],
+							$event_row[4], 
+							$event_row[5], 
+							$event_row[8], 
+							$event_row[9]);
 
     	try {
 
-		    if ( $row_nr > 0 ) {  // skip first row with headers
+			// skip first row with headers
+			if ($row_nr == 0) {      
+				$result_row[] = "Result";
+				
+			} else {
 
 			    $event = emfi_create_EM_Event_from_row($event_row);
 
@@ -246,21 +334,24 @@ function emfi_admin_process_events(){
 		    $result_row[] = "Error creating event: <strong>" . $e->getMessage() . "</strong>";
 
 	    } finally {
-		    $results[] = $result_row;
+		    $result_details[] = $result_row;
 		    $row_nr += 1;
 	    }
     }
-	$messages[] = array("details" => "Events are processed, see results below.");
-	$_SESSION["errors"] = $messages;
-    $_SESSION["results"] = $results;
-    wp_redirect( $_SERVER['HTTP_REFERER'] );
-    exit();
+
+	$result['status']         = "SUCCESS";
+	$result['message']        = "Event import succeeded.";
+	$result['result_details'] =  $result_details;
+
+	return $result;
 }
 
-// --------------- [ Upload Function ] -----------------------
-function uploadFile($file) {
+/*
+*   file upload 
+*/
+function emfi_file_upload($file) {
 
-	$data                       =           array();
+	$result                     =           array();
 
 	$source_path                =           $file['tmp_name'];
 
@@ -279,15 +370,15 @@ function uploadFile($file) {
 	// ------------ [ File Validation ] --------------------------           
 
 	if($file_type != "text/csv" && $file_type != "text/txt" ){
-		$data['status']         =           "FAILED";
-		$data['message']        =           "Invalid file type: ".$file_type." (File type only txt and csv allowed)";
-		return $data;
+		$result['status']         =           "FAILED";
+		$result['message']        =           "Invalid file type: ".$file_type." (File type only txt and csv allowed)";
+		return $result;
 	}
 
 	if($file['size']  > 2048000) {
-		$data['status']         =           "FAILED";
-		$data['message']        =           "File size is larger than 2 MB";
-		return $data;
+		$result['status']         =           "FAILED";
+		$result['message']        =           "File size is larger than 2 MB";
+		return $result;
 	}
 
     // ------------- [ Check and/or create output dir ] ---------------
@@ -307,14 +398,24 @@ function uploadFile($file) {
 
 	if(move_uploaded_file($source_path, $target_filepath)) {
 
-		$data['status']     =           "SUCCESS";
-		$data['message']    =           "File uploaded successfully to: ".$target_filepath ;
-		$data['file']       =           $target_filepath;
+		$result['status']     =           "SUCCESS";
+		$result['message']    =           "File uploaded successfully to: ".$target_filepath ;
+		$result['file']       =           $target_filepath;
 	} else {
-		$data['status']     =           "FAILED";
-		$data['message']    =           "File uploaded failed.";
-		$data['file']       =           $target_filepath;
+		$result['status']     =           "FAILED";
+		$result['message']    =           "File uploaded failed.";
+		$result['file']       =           $target_filepath;
 	}
 	
-	return $data;
+	return $result;
+}
+
+function subArraysToString($ar, $sep = ', ') {
+    $str = '';
+    foreach ($ar as $val) {
+        $str .= implode($sep, $val);
+        $str .= $sep; // add separator between sub-arrays
+    }
+    $str = rtrim($str, $sep); // remove last separator
+    return $str;
 }

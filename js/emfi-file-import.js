@@ -1,13 +1,25 @@
+// define events here so all function can access it
+var events_JSON;
+
 jQuery(document).ready(function($) {
+
+
+	jQuery('#file').change(function() {
+		$("#events_table").html('');		
+		$(".import-events-button").hide();
+		$('#emfi-message').html(`<br>`);
+	});
+
 	jQuery('#emfi-upload-file-button').click(function(e) {
 
+		jQuery('#emfi-message').html(`<br>`);
+
 		var files = document.getElementById("file").files;
-		
 		var data = new FormData();
 		data.append('file', files[0]);
 		data.append('action', 'emfi_file_upload');
 
-		// alert(`Going to call ajax_object.ajaxurl with:\n- action=${data.get('action')},\n- file=${data.get('file').name}`);
+		events = [];
 
 		$.ajax({
 			type: "POST",
@@ -17,11 +29,11 @@ jQuery(document).ready(function($) {
 			processData: false,
 			success: function(responseJson) {
 				response = JSON.parse(responseJson);
-				if(response.status=='FAILURE'){				
-					jQuery('#emfi-message').html(`<span style="color: red;">${response.message}</span>`);
+				if(response.status=='FAILURE'){
+					jQuery('#emfi-message').html(`<span style="color: red;">${response.message}</span><br>`);
 				} else {
-					events = JSON.parse(response.data);
-					jQuery('#emfi-message').html(`<span style="color: green;">${response.message}</span>`);
+					events_JSON = response.data;
+					events = JSON.parse(events_JSON);
 
 					// Table preperations
 					var parentDiv = $("#events_table");
@@ -65,56 +77,81 @@ jQuery(document).ready(function($) {
 						}
 					}
 
-					// $.each(data, function(i,val){
-					// 	jQuery('#events').html(`<tr><td>${val}</td></tr>`);
-					// });
+					// empty choosen file and make upload buttons visible
+					$(".import-events-button").show();
 				}
-				// for (var i=0;i < response.data.length; i++) {
-				// 	jQuery('#emfi-message').html(`<span style="color: green;">Respons: ${response}</span>`);
-				// }
-				// if(response.status=="FAILURE"){
-				// 	jQuery('#emfi-message').html(`<span style="color: green;">Respons: ${response.message}</span>`);
-				// } else {
-				// 	setTimeout(function(){
-				// 		response = JSON.parse(response);
-				// 		for (var i=0;i < response.Data.length; i++) {
-				// 			jQuery('#emfi-message').html(`<span style="color: green;">Respons: ${response}</span>`);
-				// 		}
-				// 	})
-				// }
 			}
 		});
 	});    
+
+	jQuery('.import-events').click(function(e) {
+
+		var data = new FormData();
+		data.append('events', events_JSON);
+		data.append('action', 'emfi_import_events');
+		// alert(events_JSON);
+
+		$.ajax({
+			type: "POST",
+			url: ajax_object.ajaxurl,
+			data: data,
+			// dataType: "json",
+			contentType: false,
+			processData: false,
+			success: function(responseJson) {
+				response = JSON.parse(responseJson);
+				if(response.status=='FAILURE'){				
+					jQuery('#emfi-message').html(`<span style="color: red;">${response.message}</span><br>`);
+				} else {
+					events = JSON.parse(response.data);
+
+					// Table preperations
+					var parentDiv = $("#events_table");
+					parentDiv.html("");
+					var aTable = $("<table class='widefat'>")
+						.appendTo(parentDiv);
+					var rowCount = events.length;
+					var colmCount = events[0].length;
+
+					// echo "<thead>";
+					// echo "<tr valign='top'>";
+					// echo "<th class='row=title'>1</th>";
+	
+					// Add the header
+					for (var k = 0; k < 1; k++) {
+						var fragTrow = $("<thead>")
+						.appendTo($("<tr>", {"valign": "top"}))
+						.appendTo(aTable);
+						for (var j = 0; j < colmCount; j++) {
+							$("<th>", {
+								"valign": "top",
+								"class": "row-title"
+							}).appendTo(fragTrow).html(events[k][j]);
+						}
+					}
+
+					// Add the rows
+					for (var i = 1; i < rowCount; i < i++) {
+						if(i % 2 == 0) {
+							addedClass = "emu-row-hover alternate"
+						} else {
+							addedClass = "emu-row-hover"
+						} 
+						var fragTrow = $("<tr>", {
+							"class": addedClass
+						}).appendTo(aTable);
+						for (var j = 0; j < colmCount; j++) {
+							$("<td>")
+							.appendTo(fragTrow)
+							.html(events[i][j]);
+						}
+					}
+
+					// empty choosen file and make upload buttons visible
+					$(".import-events-button").hide();
+				}
+			}
+		});
+
+	});    
 });
-
-
-// jQuery(document).ready(function($) {
-// 	jQuery('#upload-file-button').click(function(e) {
-// 		e.preventDefault();
-		
-// 		var email = jQuery('#roytuts_contact_email').val();
-		
-// 		var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/i;
-		
-// 		if(email !== '' && regex.test(email)) {
-		
-// 			var data = {
-// 				'action': 'roytuts_email_subscription',
-// 				'email': email
-// 			};
-//             var text = `<span style="color: red;">Valid Email: ${data.email} </span>`
-// 			jQuery('#roytuts-msg').html(text);
-
-// 			jQuery.post(ajax_object.ajaxurl, data, function(response) {
-// 				jQuery('#roytuts-msg').html(`<span style="color: green;">Respons: ${response}</span>`);
-// 			// 	if(response == "success") {
-// 			// 		jQuery('#roytuts-msg').html('<span style="color: green;">Subscription Successful</span>');
-// 			// 	} else if(response == "error") {
-// 			// 		jQuery('#roytuts-msg').html('<span style="color: red;">Subscription Failed</span>');
-// 			// 	}
-// 			});
-// 		} else {
-// 			jQuery('#roytuts-msg').html('<span style="color: red;">Invalid Email</span>');
-// 		}
-// 	});
-// });

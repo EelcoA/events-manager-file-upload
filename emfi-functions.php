@@ -1,15 +1,15 @@
 <?php
 
 // TODO: make these field numbers flexible, depending the received columns
-define('emfi_field_nr_event_start_date', 0);
-define('emfi_field_nr_event_start_time', 1);
-define('emfi_field_nr_event_end_date',   2);
-define('emfi_field_nr_event_end_time',   3);
-define('emfi_field_nr_event_name',       4);
-define('emfi_field_nr_post_excerpt',     5);
-define('emfi_field_nr_post_content',     6);
-define('emfi_field_nr_location_slug',    7);
-define('emfi_field_nr_category_slug',    8);
+define('emfi_field_nr_event_start_date', 1);
+define('emfi_field_nr_event_start_time', 2);
+define('emfi_field_nr_event_end_date',   3);
+define('emfi_field_nr_event_end_time',   4);
+define('emfi_field_nr_event_name',       5);
+define('emfi_field_nr_post_excerpt',     6);
+define('emfi_field_nr_post_content',     7);
+define('emfi_field_nr_location_slug',    8);
+define('emfi_field_nr_category_slug',    9);
 
 /**
  * Create a EM_Event object from the input row with fields
