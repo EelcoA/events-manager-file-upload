@@ -136,6 +136,8 @@ function emfi_import_events_callback(){
 
 	$result = [];
 
+//  First check the incoming data, expecting an entry 'events' with String data in $_POST
+
 	if(!isset($_POST)){
 		$result['status']  = "FAILURE";
 		$result['message'] = "Programming error, no $_POST";
@@ -158,37 +160,13 @@ function emfi_import_events_callback(){
 		echo json_encode($result);
 		wp_die();
 	}
-	// $expected = '[[0,\"datum\",\"tijd\",\"titel\"],[1,\"2020-08-22\",\"20:30\",\"Summerland\"]]';
-	// if(strcmp($expected, $events_to_import_json)){
-	// 	$result['status']  = "FAILURE";
-	// 	$result['message'] = 'Programming error: events_to_import_json does not contain expected: '.$events_to_import_json;
-	// 	echo json_encode($result);
-	// 	wp_die();
-	// }
 
-	$events_to_import_json_2 = stripslashes($events_to_import_json);
-	$events_to_import_json_3 = addslashes($events_to_import_json_2);
-	// $events_to_import_json_3 = stripslashes($events_to_import_json_2);
-	// $events_to_import_json_2 = str_replace('\"','"',$events_to_import_json);
-	// $events_to_import_json_3 = str_replace('\\','',$events_to_import_json2);
+//  Strip the JSON from redundant slashes and decode it
 
-	$events_to_import = json_decode($events_to_import_json_2);
+	$events_to_import_json_with_correct_html = stripslashes($events_to_import_json);
+	$events_to_import = json_decode($events_to_import_json_with_correct_html);
 
-	// $result['status']  = "FAILURE";
-	// $result['message'] = 'events_to_import type: ' . gettype($events_to_import) . ' # ' 
-	//                       . ' size of 0 ' . sizeof($events_to_import[0])
-	//                       . ' size of 1 ' . sizeof($events_to_import[1])
-	// 					. " rec 0: " . $events_to_import[0][0] . ", "
-	// 					. $events_to_import[0][1] . ", "
-	// 					. $events_to_import[0][2] . ", "
-	// 					. $events_to_import[0][3] . ", "
-	// 					. " rec 1: " . $events_to_import[1][0] . ", "
-	// 					. $events_to_import[1][1] . ", "
-	// 					. $events_to_import[1][2] . ", "
-	// 					. $events_to_import[1][3] . ", "
-	// 					;
-	// echo json_encode($result);
-	// wp_die();
+//  Check if the decoded JSON gave us a non-empty Array with Arrays
 
 	$datatype = gettype($events_to_import);
 	if(!$datatype=='array'){
@@ -210,7 +188,12 @@ function emfi_import_events_callback(){
 		wp_die();
 	}
 
+//  Call the importing function which returns the results in an Array of Arrays
+
 	$import_result = emfi_import_events($events_to_import);
+
+
+//  When no SUCCESS, report the error
 
 	if($import_result['status']!="SUCCESS"){
 		$result['status']  = "FAILURE";
@@ -220,6 +203,8 @@ function emfi_import_events_callback(){
 	}
 
 	$imported_events = $import_result['result_details'];
+
+//  Some checking of things that shouldn't happen, but you never know 
 
 	if(!gettype($imported_events)=='array'){
 		$result['status']  = "FAILURE";
@@ -239,6 +224,9 @@ function emfi_import_events_callback(){
 		echo json_encode($result);
 		wp_die();
 	}
+
+//  Encode the resulting array and return it 
+
 	$data = json_encode($imported_events);
 	$result['status']  = "SUCCESS";
 	$result['message'] = 'Events have been successfully imported into the database';
@@ -250,27 +238,13 @@ function emfi_import_events_callback(){
 }
 
 /*
- *  import events into the database
+ *  Import events into the database and return an array with result data back
  */
 function emfi_import_events($event_rows){
 	$result = array();
 
+//  Check the number of columns
 
-	if(!gettype($event_rows)=='array'){
-		$result['status']  = "FAILURE";
-		$result['message'] = 'Programming error: event_rows is not an array';
-		return $result;
-	}
-	if(sizeof($event_rows)==0){
-		$result['status']  = "FAILURE";
-		$result['message'] = 'Programming error: event_rows is an empty array';
-		return $result;
-	}
-	if(!gettype($event_rows[0])=='array'){
-		$result['status']  = "FAILURE";
-		$result['message'] = 'Programming error: event_rows[0] is not an arrays';
-		return $result;
-	}
 	$row0 = $event_rows[0];
 	if(sizeof($row0)!=10){
 		if(sizeof($row0)!=0){
@@ -283,9 +257,6 @@ function emfi_import_events($event_rows){
 		return $result;
 	}
 
-	// $result['status']  = "FAILURE";
-	// $result['message'] = 'In emfi_import_events, after checks, size row0: ' . sizeof($row0);
-	// return $result;
 
 	$result_details = [];
 
@@ -297,15 +268,14 @@ function emfi_import_events($event_rows){
 		 * to the result row to display later including the result 
 		 * (= message about event creation or error).
     	 */
-	    $display_row_nr = $row_nr + 1;
-		$result_row = array($event_row[0], 
-							$event_row[1], 
-							$event_row[2], 
-							$event_row[3],
-							$event_row[4], 
-							$event_row[5], 
-							$event_row[8], 
-							$event_row[9]);
+		$result_row = array($event_row[0],  // rown nr
+							$event_row[1],  // event_start_date
+							$event_row[2],  // event_start_time
+							$event_row[3],  // event_end_date
+							$event_row[4],  // event_end_time
+							$event_row[5],  // event_name
+							$event_row[8],  // location_slug
+							$event_row[9]); // category-slug
 
     	try {
 
@@ -353,19 +323,14 @@ function emfi_file_upload($file) {
 
 	$result                     =           array();
 
-	$source_path                =           $file['tmp_name'];
-
 	$file_name                  =           $file['name'];
-	
+	$source_path                =           $file['tmp_name'];
+	$file_type                  =           $file['type'];
 	$file_extension             =           pathinfo($file_name, PATHINFO_EXTENSION);
-
 	$target_file_name           =           $file_name;
-
     $plugin_dir                 =           plugin_dir_path( __FILE__ );
     $target_dir                 =           $plugin_dir . "uploaded/";
 	$target_filepath            =           $target_dir.$target_file_name;
-
-	$file_type                  =           $file['type'];
 
 	// ------------ [ File Validation ] --------------------------           
 
@@ -410,6 +375,9 @@ function emfi_file_upload($file) {
 	return $result;
 }
 
+/*
+*  Return a String representation form an Array with Arrays
+*/
 function subArraysToString($ar, $sep = ', ') {
     $str = '';
     foreach ($ar as $val) {
