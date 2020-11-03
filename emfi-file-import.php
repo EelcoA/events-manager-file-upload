@@ -331,7 +331,7 @@ function emfi_import_events($event_rows){
 		    }
 	    } catch (Exception $e){
     		// Add an error message to display in the results
-		    $result_row[] = "Error creating event: <strong>" . $e->getMessage() . "</strong>";
+		    $result_row[] = "Error creating event:<br><strong>" . $e->getMessage() . "</strong>";
 
 	    } finally {
 		    $result_details[] = $result_row;

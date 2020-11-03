@@ -63,12 +63,16 @@ jQuery(document).ready(function($) {
 					// Add the rows
 					for (var i = 1; i < rowCount; i < i++) {
 						if(i % 2 == 0) {
-							addedClass = "emu-row-hover alternate"
+							rowClass = "emu-row-hover alternate";
 						} else {
-							addedClass = "emu-row-hover"
+							rowClass = "emu-row-hover";
 						} 
+						messageToUpper = events[i][colmCount-1].toUpperCase();
+						if(messageToUpper.includes("ERROR")){
+							rowClass += " emu-error";
+						}
 						var fragTrow = $("<tr>", {
-							"class": addedClass
+							"class": rowClass
 						}).appendTo(aTable);
 						for (var j = 0; j < colmCount; j++) {
 							$("<td>")
@@ -129,19 +133,27 @@ jQuery(document).ready(function($) {
 							}).appendTo(fragTrow).html(events[k][j]);
 						}
 					}
-
+					
+					indexLastColumn = colmCount -1;
 					// Add the rows
 					for (var i = 1; i < rowCount; i < i++) {
 						if(i % 2 == 0) {
-							addedClass = "emu-row-hover alternate"
+							rowClass = "emu-row-hover alternate";
 						} else {
-							addedClass = "emu-row-hover"
+							rowClass = "emu-row-hover";
 						} 
 						var fragTrow = $("<tr>", {
-							"class": addedClass
+							"class": rowClass
 						}).appendTo(aTable);
 						for (var j = 0; j < colmCount; j++) {
-							$("<td>")
+							cellClass = "";
+							if (j == indexLastColumn){
+								messageToUpper = events[i][j].toUpperCase();
+								if(messageToUpper.includes("ERROR")){
+									cellClass = "emu-error";
+								}
+							}
+							$("<td>", { "class": cellClass})
 							.appendTo(fragTrow)
 							.html(events[i][j]);
 						}

@@ -71,7 +71,7 @@
             # loop through all fields
             foreach ($result as $field){
                 if ($row_nr == 0)
-                    echo "<th class='row=title'>" . $field . "</th>";
+                    echo "<th class='row-title'>" . $field . "</th>";
                 else
                     if (stristr($field, "error"))
                         echo "<td class='emu-error'>" . $field . "</td>";
