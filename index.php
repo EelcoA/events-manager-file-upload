@@ -1,6 +1,6 @@
-    <!DOCTYPE html>
-    <html>
-
+<!DOCTYPE html>
+<html>
+<head>
     <style>
         td.emu-error {
             background-color: #f1c8c7;
@@ -9,8 +9,12 @@
             background-color: whitesmoke;
         }
     </style>
-    <body>
-      <h1>Events Manager File Import</h1>
+</head>
+    
+<body>
+    <h1>Events Manager File Import</h1>
+    <p>A non-official plugin to upload files with events into Event Manager.
+    </p>
 
     <div id="emfi-message" rows="4" cols="80">
         <br>
@@ -27,6 +31,7 @@
         </div>
     </form>
 
+
     <div class="import-events-button" hidden="hidden">
         <br>
         <input class="button-primary import-events" 
@@ -37,7 +42,39 @@
     </div>
 
     <br>
+
     <div id="events_table"></div>
+    <script id="events_table_template" type="text/x-jsrender">
+        <div>
+            <table class='widefat'>
+            {{for events}}
+                {{if #getIndex() === 0}}
+                    <thead>
+                        <tr class='row-title valign='top'>
+                            {{for}}
+                               <td>{{:}}</td>
+                            {{/for}}
+                        </tr>
+                    </thead>
+                {{else}}
+                    <tbody>
+                        {{if #getIndex() % 2 == 0}}
+                            <tr valign='top' class='emu-row-hover alternate'>
+                        {{else}}
+                            <tr valign='top' class='emu-row-hover'>
+                        {{/if}}
+                            {{for}}
+                              {{decorateCellValue:}}
+                            {{/for}}
+                        </tr>
+                    </tbody>
+                {{/if}}
+            {{/for}}
+            </table>
+        </div>
+    </script>
+
+    <br>
 
     <div class="import-events-button" hidden="hidden">
         <br>
@@ -48,48 +85,6 @@
         <br>
     </div>
 
+</body>
 
-<?php
-
-    if(isset($_SESSION['results']))
-        $results = $_SESSION['results'];
-
-    if(!empty($results)) {
-
-        echo "<H3>Result</H3>";
-
-        $row_nr = 0;
-        echo "<table class='widefat'>";
-        foreach($results as $result) {
-
-            if ($row_nr == 0) {
-	            echo "<thead>";
-	            echo "<tr valign='top'>";
-            } else
-                echo "<tr valign='top' class='emu-row-hover'>";
-
-            # loop through all fields
-            foreach ($result as $field){
-                if ($row_nr == 0)
-                    echo "<th class='row-title'>" . $field . "</th>";
-                else
-                    if (stristr($field, "error"))
-                        echo "<td class='emu-error'>" . $field . "</td>";
-                    else
-                        echo "<td>" . $field . "</td>";
-            }
-
-            echo "</tr>";
-            if ($row_nr == 0)
-                echo "</thead><tbody>";
-            $errArray   =   array();
-            $row_nr += 1;
-        }
-        echo "</tbody></table>";
-	    $_SESSION["results"] = null;
-    }
-
-?>
-
-    </body>
-    </html>
+</html>

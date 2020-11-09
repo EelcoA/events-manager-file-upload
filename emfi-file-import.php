@@ -28,6 +28,12 @@ function emfi_Add_My_Admin_Link()
     );
 }
 
+// Make JSRender javascript library available
+add_action( 'admin_enqueue_scripts', 'emfi_add_JSRender' );
+function emfi_add_JSRender(){
+	wp_enqueue_script('emfi_jsrender', 
+	'https://cdnjs.cloudflare.com/ajax/libs/jsrender/1.0.8/jsrender.min.js');
+}
 
 // Make the javascript file available for admin pages
 add_action( 'admin_enqueue_scripts', 'emfi_scripts' );

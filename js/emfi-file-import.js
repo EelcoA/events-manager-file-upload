@@ -1,15 +1,37 @@
 // define events here so all function can access it
 var events_JSON;
 
+
 jQuery(document).ready(function($) {
 
 
+	/*
+	*  If field contains the word 'error', add the emu-error class
+	*/
+	$.views.converters("decorateCellValue", function(val) {
+		val = ""+val;
+		if(val.toUpperCase().includes("ERROR")){
+			returnValue = "<td class='emu-error'>"+val+"</td>";
+		} else {
+			returnValue = "<td>"+val+"</td>";
+		}
+		return returnValue; 
+	});
+
+
+	/*
+	*  Initialise fields when a new file is choosen
+	*/
 	jQuery('#file').change(function() {
 		$("#events_table").html('');		
 		$(".import-events-button").hide();
 		$('#emfi-message').html(`<br>`);
 	});
 
+
+	/*
+	*  Upload the file and show the content
+	*/
 	jQuery('#emfi-upload-file-button').click(function(e) {
 
 		jQuery('#emfi-message').html(`<br>`);
@@ -32,55 +54,16 @@ jQuery(document).ready(function($) {
 				if(response.status=='FAILURE'){
 					jQuery('#emfi-message').html(`<span style="color: red;">${response.message}</span><br>`);
 				} else {
+
 					events_JSON = response.data;
 					events = JSON.parse(events_JSON);
 
-					// Table preperations
-					var parentDiv = $("#events_table");
-					parentDiv.html("");
-					var aTable = $("<table class='widefat'>")
-						.appendTo(parentDiv);
-					var rowCount = events.length;
-					var colmCount = events[0].length;
-
-					// echo "<thead>";
-					// echo "<tr valign='top'>";
-					// echo "<th class='row=title'>1</th>";
-	
-					// Add the header
-					for (var k = 0; k < 1; k++) {
-						var fragTrow = $("<thead>")
-						.appendTo($("<tr>", {"valign": "top"}))
-						.appendTo(aTable);
-						for (var j = 0; j < colmCount; j++) {
-							$("<th>", {
-								"valign": "top",
-								"class": "row-title"
-							}).appendTo(fragTrow).html(events[k][j]);
-						}
-					}
-
-					// Add the rows
-					for (var i = 1; i < rowCount; i < i++) {
-						if(i % 2 == 0) {
-							rowClass = "emu-row-hover alternate";
-						} else {
-							rowClass = "emu-row-hover";
-						} 
-						messageToUpper = events[i][colmCount-1].toUpperCase();
-						if(messageToUpper.includes("ERROR")){
-							rowClass += " emu-error";
-						}
-						var fragTrow = $("<tr>", {
-							"class": rowClass
-						}).appendTo(aTable);
-						for (var j = 0; j < colmCount; j++) {
-							$("<td>")
-							.appendTo(fragTrow)
-							.html(events[i][j]);
-						}
-					}
-
+					// prepare JSRender template, data and render it
+					var tmpl = $.templates("#events_table_template");
+					var eventsArray = { "events": events};
+					var html = tmpl.render(eventsArray);
+					$('#events_table').html(html);
+			
 					// empty choosen file and make upload buttons visible
 					$(".import-events-button").show();
 				}
@@ -88,18 +71,19 @@ jQuery(document).ready(function($) {
 		});
 	});    
 
+	/*
+	*  Import the events from the file and show the result
+	*/
 	jQuery('.import-events').click(function(e) {
 
 		var data = new FormData();
 		data.append('events', events_JSON);
 		data.append('action', 'emfi_import_events');
-		// alert(events_JSON);
 
 		$.ajax({
 			type: "POST",
 			url: ajax_object.ajaxurl,
 			data: data,
-			// dataType: "json",
 			contentType: false,
 			processData: false,
 			success: function(responseJson) {
@@ -109,57 +93,13 @@ jQuery(document).ready(function($) {
 				} else {
 					events = JSON.parse(response.data);
 
-					// Table preperations
-					var parentDiv = $("#events_table");
-					parentDiv.html("");
-					var aTable = $("<table class='widefat'>")
-						.appendTo(parentDiv);
-					var rowCount = events.length;
-					var colmCount = events[0].length;
+					// prepare JSRender template, data and render it
+					var tmpl = $.templates("#events_table_template");
+					var eventsArray = { "events": events};
+					var html = tmpl.render(eventsArray);
+					$('#events_table').html(html);
 
-					// echo "<thead>";
-					// echo "<tr valign='top'>";
-					// echo "<th class='row=title'>1</th>";
-	
-					// Add the header
-					for (var k = 0; k < 1; k++) {
-						var fragTrow = $("<thead>")
-						.appendTo($("<tr>", {"valign": "top"}))
-						.appendTo(aTable);
-						for (var j = 0; j < colmCount; j++) {
-							$("<th>", {
-								"valign": "top",
-								"class": "row-title"
-							}).appendTo(fragTrow).html(events[k][j]);
-						}
-					}
-					
-					indexLastColumn = colmCount -1;
-					// Add the rows
-					for (var i = 1; i < rowCount; i < i++) {
-						if(i % 2 == 0) {
-							rowClass = "emu-row-hover alternate";
-						} else {
-							rowClass = "emu-row-hover";
-						} 
-						var fragTrow = $("<tr>", {
-							"class": rowClass
-						}).appendTo(aTable);
-						for (var j = 0; j < colmCount; j++) {
-							cellClass = "";
-							if (j == indexLastColumn){
-								messageToUpper = events[i][j].toUpperCase();
-								if(messageToUpper.includes("ERROR")){
-									cellClass = "emu-error";
-								}
-							}
-							$("<td>", { "class": cellClass})
-							.appendTo(fragTrow)
-							.html(events[i][j]);
-						}
-					}
-
-					// empty choosen file and make upload buttons visible
+					// Hide the buttons for importing the events
 					$(".import-events-button").hide();
 				}
 			}
