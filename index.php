@@ -15,8 +15,8 @@
     <h1>Events Manager File Upload</h1>
     <h4>A non-official 'Events Manager' add-on to import events from a CSV file.</h4>
     Project website:<a target="_blank" rel="noopener noreferrer" 
-           href='https://github.com/EelcoA/event-manager-file-import'>
-           https://github.com/EelcoA/event-manager-file-import</a>.
+           href='https://github.com/EelcoA/events-manager-file-upload'>
+           https://github.com/EelcoA/events-manager-file-upload</a>.
     <p>
        <br>
        </p>
@@ -25,7 +25,7 @@
        The file can be created manualy or by using a (web scraping) program. 
        The file must be comma seperated and must contain a header row. 
        See this <a target="_blank" rel="noopener noreferrer" 
-       href='https://github.com/EelcoA/event-manager-file-import/blob/master/doc/example_input_file.csv'>
+       href='https://github.com/EelcoA/events-manager-file-upload/blob/master/doc/example_input_file.csv'>
        github page</a> for an example file.
        <br>See this <a target="_blank" rel="noopener noreferrer" 
            href='https://github.com/EelcoA/fabriekscraper'>web-scraping project</a> 
@@ -44,7 +44,7 @@
             <label><?php _e('Select file:'); ?></label>
             <input type="file" id="file" name="file" accept=".csv"/>
             <input class="button-primary" 
-                   id="emfi-upload-file-button" 
+                   id="emfu-upload-file-button" 
                    title="This does NOT import the events yet, just shows them"
                    value="Upload file" />
         </div>
@@ -67,7 +67,7 @@
     </div>
 
     <br>
-    <div id="emfi-message" rows="4" cols="80">
+    <div id="emfu-message" rows="4" cols="80">
         <br>
     </div>
     <br>

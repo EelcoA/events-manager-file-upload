@@ -25,21 +25,21 @@ jQuery(document).ready(function($) {
 	jQuery('#file').change(function() {
 		$("#events_table").html('');		
 		$(".import-events-button").hide();
-		$('#emfi-message').html(`<br>`);
+		$('#emfu-message').html(`<br>`);
 	});
 
 
 	/*
 	*  Upload the file and show the content
 	*/
-	jQuery('#emfi-upload-file-button').click(function(e) {
+	jQuery('#emfu-upload-file-button').click(function(e) {
 
-		jQuery('#emfi-message').html(`<br>`);
+		jQuery('#emfu-message').html(`<br>`);
 
 		var files = document.getElementById("file").files;
 		var data = new FormData();
 		data.append('file', files[0]);
-		data.append('action', 'emfi_file_upload');
+		data.append('action', 'emfu_file_upload');
 
 		events = [];
 
@@ -52,7 +52,7 @@ jQuery(document).ready(function($) {
 			success: function(responseJson) {
 				response = JSON.parse(responseJson);
 				if(response.status=='FAILURE'){
-					jQuery('#emfi-message').html(`<span style="color: red;">${response.message}</span><br>`);
+					jQuery('#emfu-message').html(`<span style="color: red;">${response.message}</span><br>`);
 				} else {
 
 					events_JSON = response.data;
@@ -78,7 +78,7 @@ jQuery(document).ready(function($) {
 
 		var data = new FormData();
 		data.append('events', events_JSON);
-		data.append('action', 'emfi_import_events');
+		data.append('action', 'emfu_import_events');
 
 		$.ajax({
 			type: "POST",
@@ -89,9 +89,9 @@ jQuery(document).ready(function($) {
 			success: function(responseJson) {
 				response = JSON.parse(responseJson);
 				if(response.status=='FAILURE'){				
-					jQuery('#emfi-message').html(`<span style="color: red;">${response.message}</span><br>`);
+					jQuery('#emfu-message').html(`<span style="color: red;">${response.message}</span><br>`);
 				} else {
-					jQuery('#emfi-message').html(`<h2>Import results:</h2>`);
+					jQuery('#emfu-message').html(`<h2>Import results:</h2>`);
 
 					events = JSON.parse(response.data);
 

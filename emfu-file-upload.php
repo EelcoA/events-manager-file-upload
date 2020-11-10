@@ -1,45 +1,45 @@
 <?php
 /*
-Plugin Name: Events Manager - File Import
-Version: 1.1.1
+Plugin Name: Events Manager - File Upload
+Version: 1.2.0
 Plugin URI: https://github.com/EelcoA/event-manager-file-import
-Description: Import CSV file with events into Events Manager for Wordpress. Events for the same location/date/time are skipped. So if you want to replace the existing one with a new one, you first have to delete the current event. 
+Description: A non-official 'Events Manager' add-on to import events from a CSV file.
 Author: Eelco Aartsen, AESSET IT
 Author URI: https://www.aesset.nl
 */
-include("emfi-functions.php");
+include("emfu-functions.php");
 
 // TODO: internationalization
 
 global $wpdb;
 
 // Hook the 'admin_menu' action hook, run the function named
-add_action('admin_menu', 'emfi_Add_My_Admin_Link');
+add_action('admin_menu', 'emfu_Add_My_Admin_Link');
 
 
 // Add a new top level menu link to the ACP
-function emfi_Add_My_Admin_Link()
+function emfu_Add_My_Admin_Link()
 {
     add_menu_page(
         'Import Events', // Title of the page
         'Import Events', // Text to show on the menu link
         'manage_options', // Capability requirement to see the link
-        'event-manager-file-import/index.php' // The 'slug' - file to display when clicking the link
+        'events-manager-file-upload/index.php' // The 'slug' - file to display when clicking the link
     );
 }
 
 // Make JSRender javascript library available
-add_action( 'admin_enqueue_scripts', 'emfi_add_JSRender' );
-function emfi_add_JSRender(){
-	wp_enqueue_script('emfi_jsrender', 
+add_action( 'admin_enqueue_scripts', 'emfu_add_JSRender' );
+function emfu_add_JSRender(){
+	wp_enqueue_script('emfu_jsrender', 
 	'https://cdnjs.cloudflare.com/ajax/libs/jsrender/1.0.8/jsrender.min.js');
 }
 
 // Make the javascript file available for admin pages
-add_action( 'admin_enqueue_scripts', 'emfi_scripts' );
-function emfi_scripts() {
+add_action( 'admin_enqueue_scripts', 'emfu_scripts' );
+function emfu_scripts() {
 	wp_register_script('ajaxHandle', 
-						plugin_dir_url( __FILE__ ) . '/js/emfi-file-import.js',
+						plugin_dir_url( __FILE__ ) . '/js/emfu-file-upload.js',
 						array('jquery'), 
 						false, 
 						true);	
@@ -56,10 +56,10 @@ function emfi_scripts() {
 *   upload the files, read content and return as json data
 */
 
-add_action('wp_ajax_emfi_file_upload', 'emfi_file_upload_callback');
-add_action('wp_ajax_nopriv_emfi_file_upload','emfi_file_upload_callback');
+add_action('wp_ajax_emfu_file_upload', 'emfu_file_upload_callback');
+add_action('wp_ajax_nopriv_emfu_file_upload','emfu_file_upload_callback');
 
-function emfi_file_upload_callback() {
+function emfu_file_upload_callback() {
 
 	$result = [];
 
@@ -77,7 +77,7 @@ function emfi_file_upload_callback() {
 		wp_die();
 	}
 
-	$uploadResult = emfi_file_upload($_FILES['file']);
+	$uploadResult = emfu_file_upload($_FILES['file']);
 
 	if($uploadResult['status']!="SUCCESS"){
 		$result['status']  = "FAILURE";
@@ -86,9 +86,9 @@ function emfi_file_upload_callback() {
 		wp_die();
 	}
 
-	$emfi_events = emfi_get_events_from_file($uploadResult['file']);
+	$emfu_events = emfu_get_events_from_file($uploadResult['file']);
 
-	$data = json_encode($emfi_events);
+	$data = json_encode($emfu_events);
 	$result['status']  = "SUCCESS";
 	$result['message'] = 'File has been successfully uploaded';
 	$result['data']    = $data;
@@ -105,7 +105,7 @@ function emfi_file_upload_callback() {
  * 
  * TODO: make it monkey-proof for invalid file and file types
  */
-function emfi_get_events_from_file($filename){
+function emfu_get_events_from_file($filename){
 
 	$events = array();
 	$rown_number = 0;
@@ -135,10 +135,10 @@ function emfi_get_events_from_file($filename){
 /*
 *   Callback function for importing events
 */
-add_action('wp_ajax_emfi_import_events', 'emfi_import_events_callback');
-add_action('wp_ajax_nopriv_emfi_import_events','emfi_file_upload_callback');
+add_action('wp_ajax_emfu_import_events', 'emfu_import_events_callback');
+add_action('wp_ajax_nopriv_emfu_import_events','emfu_import_events_callback');
 
-function emfi_import_events_callback(){
+function emfu_import_events_callback(){
 
 	$result = [];
 
@@ -196,7 +196,7 @@ function emfi_import_events_callback(){
 
 //  Call the importing function which returns the results in an Array of Arrays
 
-	$import_result = emfi_import_events($events_to_import);
+	$import_result = emfu_import_events($events_to_import);
 
 
 //  When no SUCCESS, report the error
@@ -246,7 +246,7 @@ function emfi_import_events_callback(){
 /*
  *  Import events into the database and return an array with result data back
  */
-function emfi_import_events($event_rows){
+function emfu_import_events($event_rows){
 	$result = array();
 
 //  Check the number of columns
@@ -291,9 +291,9 @@ function emfi_import_events($event_rows){
 				
 			} else {
 
-			    $event = emfi_create_EM_Event_from_row($event_row);
+			    $event = emfu_create_EM_Event_from_row($event_row);
 
-			    if (emfi_event_exists($event)) {
+			    if (emfu_event_exists($event)) {
 				    throw new Exception( "Event already exists with that location/title/date/time." );
 			    }
 
@@ -325,7 +325,7 @@ function emfi_import_events($event_rows){
 /*
 *   file upload 
 */
-function emfi_file_upload($file) {
+function emfu_file_upload($file) {
 
 	$result                     =           array();
 
