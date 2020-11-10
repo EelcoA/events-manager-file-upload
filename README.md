@@ -2,6 +2,10 @@
 
 Plugin to upload events from a csv file into the Events Manager for Wordpress.
 
+# Dependencies
+Event Manager, latest tested version: 5.9.8.1
+JwRender, 1.0.8
+
 ### Warning
 This plugin is NOT created by the people of Events Manager (https://wp-events-plugin.com). 
 It is created because we needed a simple but efficient csf file import function.
