@@ -17,7 +17,9 @@
     <p>
        Files must be comma seperated files, and contain a header row. 
        See this <a href='https://github.com/EelcoA/event-manager-file-import/blob/master/doc/example_input_file.csv'>github page</a>
-       for an example file. 
+       for an example file.
+       <br>
+       <br>Project website and documentation: <a href='https://github.com/EelcoA/event-manager-file-import'>https://github.com/EelcoA/event-manager-file-import</a>.
        <br>See this <a href='https://github.com/EelcoA/fabriekscraper'>web-scraping project</a> for an example how to create these files from a website with events, written in Python, using <a href='https://www.scrapy.org'>Srapy</a>.
     </p>
 
