@@ -124,11 +124,12 @@ function emfi_event_exists(EM_Event $event): bool
 
 	$location_id = $event->location_id;
 	$event_name  = $event->event_name;
-	$event_start = $event->start()->getDateTime();
+	$event_start_date = $event->event_start_date;
+	$event_start_time = $event->event_start_time;
 
 	$query_string = $wpdb->prepare( "SELECT count(*) FROM " . EM_EVENTS_TABLE .
-	                                " where event_status = 1 and location_id = %d and event_name = %s and event_start = %s",
-		array($location_id, $event_name, $event_start)
+	                                " where event_status = 1 and location_id = %d and event_name = %s and event_start_date = %s  and event_start_time = %s",
+		array($location_id, $event_name, $event_start_date, $event_start_time)
 	);
 	$count = (int) $wpdb->get_var($query_string);
 	return ($count > 0);

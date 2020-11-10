@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Events Manager - File Import
-Version: 1.1.0
+Version: 1.1.1
 Plugin URI: https://github.com/EelcoA/event-manager-file-import
 Description: Import CSV file with events into Events Manager for Wordpress. Events for the same location/date/time are skipped. So if you want to replace the existing one with a new one, you first have to delete the current event. 
 Author: Eelco Aartsen, AESSET IT
