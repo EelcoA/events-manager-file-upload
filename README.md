@@ -1,4 +1,4 @@
-# Events Manager File Import
+# Events Manager File Upload
 
 A non-official 'Events Manager' add-on to import events from a CSV file,
 Github page: https://github.com/EelcoA/events-manager-file-upload
