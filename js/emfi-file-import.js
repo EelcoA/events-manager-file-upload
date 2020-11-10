@@ -91,6 +91,8 @@ jQuery(document).ready(function($) {
 				if(response.status=='FAILURE'){				
 					jQuery('#emfi-message').html(`<span style="color: red;">${response.message}</span><br>`);
 				} else {
+					jQuery('#emfi-message').html(`<h2>Import results:</h2>`);
+
 					events = JSON.parse(response.data);
 
 					// prepare JSRender template, data and render it
