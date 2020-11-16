@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Events Manager - File Upload
-Version: 1.2.0
+Version: 1.2.1
 Plugin URI: https://github.com/EelcoA/event-manager-file-import
 Description: A non-official 'Events Manager' add-on to import events from a CSV file.
 Author: Eelco Aartsen, AESSET IT
