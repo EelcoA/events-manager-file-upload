@@ -340,12 +340,6 @@ function emfu_file_upload($file) {
 
 	// ------------ [ File Validation ] --------------------------           
 
-	if($file_type != "text/csv" && $file_type != "text/txt" ){
-		$result['status']         =           "FAILED";
-		$result['message']        =           "Invalid file type: ".$file_type." (File type only txt and csv allowed)";
-		return $result;
-	}
-
 	if($file['size']  > 2048000) {
 		$result['status']         =           "FAILED";
 		$result['message']        =           "File size is larger than 2 MB";
