@@ -4,8 +4,9 @@ A non-official 'Events Manager' add-on to import events from a CSV file,
 Github page: https://github.com/EelcoA/events-manager-file-upload
 
 ### Dependencies
-- Wordpress, latest tested version: 5.5.3
-- Event Manager, latest tested version: 5.9.8.1
+- PHP 8.1.14
+- Wordpress, latest tested version: 6.1.1
+- Event Manager, latest tested version: 6.3
 - JwRender, 1.0.8
 
 ### Warning

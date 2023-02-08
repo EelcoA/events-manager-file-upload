@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Events Manager - File Upload
-Version: 1.2.1
+Version: 1.2.2
 Plugin URI: https://github.com/EelcoA/event-manager-file-import
 Description: A non-official 'Events Manager' add-on to import events from a CSV file.
 Author: Eelco Aartsen, AESSET IT
@@ -160,7 +160,7 @@ function emfu_import_events_callback(){
 
 	$events_to_import_json = $_POST['events'];
 	$datatype = gettype($events_to_import_json);
-	if(!datatype=="string"){
+	if(!$datatype=="string"){
 		$result['status']  = "FAILURE";
 		$result['message'] = 'Programming error: events_to_import_json is not a string but a '.$datatype;
 		echo json_encode($result);
